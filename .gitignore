@@ -112,3 +112,18 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# KDE Dolphin folder metadata
+.directory
+
+# Blender autosave backups (the .blend sources themselves ARE committed)
+*.blend1
+*.blend2
+
+# -------
+CLAUDE.md
+
+# Editor swap and backup files
+*.swp
+*.swo
+*~
