@@ -1,0 +1,18 @@
+{
+    "name": "Zoea.EditorTools",
+    "rootNamespace": "Zoea.EditorTools",
+    "references": [
+        "Zoea"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -15786,7 +15786,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Zoea.World.PelletEater
   _ep: {fileID: 1017074336}
   _eatAudio: {fileID: 1017074337}
-  _eatClip: {fileID: 8300000, guid: 2281aa3081a521e00a873e74d6a97b46, type: 3}
+  _eatClip: {fileID: 8300000, guid: beba51b49e97a2939bf87cbe07fd0b28, type: 3}
   _pitchVariation: 0.1
 --- !u!65 &1017074339
 BoxCollider:
@@ -37169,7 +37169,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: bfefffb61c0c79313b8e4023fff041f8, type: 3}
+  m_Resource: {fileID: 8300000, guid: e367c14656ea39e09865af9d9d955bdd, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1

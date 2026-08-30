@@ -13,11 +13,10 @@ namespace Zoea.World{
         /// Consumes the pellet, destroying it, and returns the EP it was
         /// worth. Returns 0 and does nothing if it was already consumed.
         ///
-        /// The _consumed guard is load-bearing: the player has two
-        /// colliders, so OnTriggerEnter can fire twice for the same pellet
-        /// in one physics step, and Destroy() does not remove the object
-        /// until the end of the frame. Without the guard the same pellet
-        /// would be counted twice.
+        /// The _consumed guard is load-bearing: Destroy() does not remove
+        /// the GameObject until the end of the frame, so its collider stays
+        /// live and can register further trigger events in the interim.
+        /// Without the guard a pellet consumed once could pay out again.
         /// </summary>
         public int TryConsume(){
             if(_consumed){
