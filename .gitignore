@@ -120,8 +120,9 @@ InitTestScene*.unity*
 *.blend1
 *.blend2
 
-# -------
+# Workign tools / artifacts
 CLAUDE.md
+hierarchy.txt
 
 # Editor swap and backup files
 *.swp

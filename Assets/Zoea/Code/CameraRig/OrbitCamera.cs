@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Zoea.Core;
 
-namespace Zoea.CameraRig
-{
+namespace Zoea.CameraRig{
     /// <summary>
     /// Third-person orbit camera. Thin adapter over <see cref="OrbitCameraMath"/>:
     /// Update reads mouse input into yaw/pitch, LateUpdate turns yaw/pitch into a
@@ -16,8 +15,7 @@ namespace Zoea.CameraRig
     /// the target drift off-centre while position catches up. Looking at the
     /// pivot keeps the creature centred in frame.
     /// </summary>
-    public class OrbitCamera : MonoBehaviour
-    {
+    public class OrbitCamera : MonoBehaviour{
         [SerializeField] private Transform _target = null;
         [SerializeField] private float _distance = 5f;
         [SerializeField] private float _pivotHeight = 0.5f;
@@ -35,25 +33,21 @@ namespace Zoea.CameraRig
         /// <summary>Current aim rotation, for the movement controller to read.</summary>
         public Quaternion AimRotation => OrbitCameraMath.AimRotation(_yaw, _pitch);
 
-        private void Start()
-        {
-            if (_lockCursor)
-            {
+        private void Start(){
+            if (_target == null){
+                Debug.LogError($"{nameof(OrbitCamera)}: {nameof(_target)} is not assigned.", this);
+                enabled = false;
+                return;
+            }
+
+            if (_lockCursor){
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
-
-            if (_target == null)
-            {
-                Debug.LogError($"{nameof(OrbitCamera)}: {nameof(_target)} is not assigned.", this);
-                enabled = false;
-            }
         }
 
-        private void Update()
-        {
-            if (Mouse.current == null)
-            {
+        private void Update(){
+            if (Mouse.current == null){
                 return;
             }
 
@@ -66,24 +60,20 @@ namespace Zoea.CameraRig
             _pitch += _invertY ? pitchDelta : -pitchDelta;
             _pitch = OrbitCameraMath.ClampPitch(_pitch, _minPitch, _maxPitch);
 
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame){
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
 
             if (Mouse.current.leftButton.wasPressedThisFrame
-                && Cursor.lockState != CursorLockMode.Locked)
-            {
+                && Cursor.lockState != CursorLockMode.Locked){
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
         }
 
-        private void LateUpdate()
-        {
-            if (_target == null)
-            {
+        private void LateUpdate(){
+            if (_target == null){
                 return;
             }
 

@@ -3,8 +3,7 @@ using UnityEngine.InputSystem;
 using Zoea.CameraRig;
 using Zoea.Core;
 
-namespace Zoea.Movement
-{
+namespace Zoea.Movement{
     /// <summary>
     /// Thin adapter driving the player creature's Rigidbody from keyboard
     /// input and the camera's aim rotation. Update only polls input;
@@ -28,8 +27,7 @@ namespace Zoea.Movement
     /// angle.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    public class SwimController : MonoBehaviour
-    {
+    public class SwimController : MonoBehaviour{
         [SerializeField] private OrbitCamera _camera = null;
         [SerializeField] private float _swimForce = 8f;
         [SerializeField] private float _brakeStrength = 4f;
@@ -43,24 +41,22 @@ namespace Zoea.Movement
         private float _strafe;
         private bool _reversing;
 
-        private void Awake()
-        {
+        private void Awake(){
             _rb = GetComponent<Rigidbody>();
         }
 
-        private void Start()
-        {
-            if (_camera == null)
-            {
+        private void Start(){
+            if (_camera == null){
                 Debug.LogError($"{nameof(SwimController)}: {nameof(_camera)} is not assigned.", this);
                 enabled = false;
             }
         }
 
-        private void Update()
-        {
-            if (Keyboard.current == null)
-            {
+        private void Update(){
+            if (Keyboard.current == null){
+                _forwardHeld = false;
+                _brakeHeld = false;
+                _strafe = 0f;
                 return;
             }
 
@@ -70,38 +66,28 @@ namespace Zoea.Movement
                     - (Keyboard.current.aKey.isPressed ? 1f : 0f);
         }
 
-        private void FixedUpdate()
-        {
-            if (_camera == null)
-            {
+        private void FixedUpdate(){
+            if (_camera == null){
                 return;
             }
 
             Quaternion aim = _camera.AimRotation;
 
-            if (!_brakeHeld)
-            {
+            if (!_brakeHeld){
                 _reversing = false;
-            }
-            else if (SwimMath.ShouldStartReversing(_brakeHeld, _reversing,
-                     _rb.linearVelocity.magnitude, _reverseEntrySpeed))
-            {
+            }else if (SwimMath.ShouldStartReversing(_brakeHeld, _reversing,
+                     _rb.linearVelocity.magnitude, _reverseEntrySpeed)){
                 _reversing = true;
             }
 
             bool braking = _brakeHeld && !_reversing;
 
             Vector3 moveDirection;
-            if (braking)
-            {
+            if (braking){
                 moveDirection = Vector3.zero;
-            }
-            else if (_reversing)
-            {
+            }else if (_reversing){
                 moveDirection = aim * Vector3.back;
-            }
-            else
-            {
+            }else{
                 moveDirection = SwimMath.MoveDirection(aim, _forwardHeld, _strafe);
             }
 
@@ -109,23 +95,15 @@ namespace Zoea.Movement
             float angleToTarget = Quaternion.Angle(_rb.rotation, target);
             bool aligned = angleToTarget <= _thrustAlignmentAngle;
 
-            if (braking)
-            {
+            if (braking){
                 _rb.AddForce(-_rb.linearVelocity * _brakeStrength, ForceMode.Acceleration);
-            }
-            else if (_reversing)
-            {
-                if (aligned)
-                {
+            }else if (_reversing){
+                if (aligned){
                     _rb.AddForce(moveDirection * _swimForce, ForceMode.Acceleration);
-                }
-                else if (_rb.linearVelocity.magnitude > _reverseEntrySpeed)
-                {
+                }else if (_rb.linearVelocity.magnitude > _reverseEntrySpeed){
                     _rb.AddForce(-_rb.linearVelocity * _brakeStrength, ForceMode.Acceleration);
                 }
-            }
-            else if (moveDirection.sqrMagnitude > 0.0001f)
-            {
+            }else if (moveDirection.sqrMagnitude > 0.0001f){
                 _rb.AddForce(moveDirection * _swimForce, ForceMode.Acceleration);
             }
 
