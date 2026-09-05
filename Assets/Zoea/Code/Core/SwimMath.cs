@@ -22,12 +22,37 @@ namespace Zoea.Core{
         }
 
         /// <summary>
+        /// Direction the creature's BODY should turn to face this frame. This
+        /// is not always the direction thrust is applied in: while braking
+        /// (brakeHeld), the body turns to face the reverse heading
+        /// (aimRotation * Vector3.back), and A/D now steer that reverse
+        /// heading — strafe is added in exactly as it is for MoveDirection,
+        /// producing diagonal reverse headings. W remains ignored entirely
+        /// while braking.
+        /// </summary>
+        public static Vector3 FacingDirection(Quaternion aimRotation, bool brakeHeld, bool forwardHeld, float strafe){
+            if (brakeHeld){
+                Vector3 dir = aimRotation * Vector3.back;
+                dir += (aimRotation * Vector3.right) * strafe;
+                return dir.normalized;
+            }
+            return MoveDirection(aimRotation, forwardHeld, strafe);
+        }
+
+        /// <summary>
         /// True the instant the brake should hand off into a reverse turnaround
         /// rather than continuing to decelerate: brake is held, we are not
-        /// already reversing, and speed has dropped to the entry threshold.
+        /// already reversing, speed has dropped to the entry threshold, AND
+        /// the body has finished rotating to face the reverse heading
+        /// (aligned). The caller latches the result and never re-evaluates
+        /// this while the brake stays held, so the alignment check is
+        /// one-shot: it gates only the initial turnaround, and steering with
+        /// A/D afterward is not gated by it.
         /// </summary>
-        public static bool ShouldStartReversing(bool brakeHeld, bool alreadyReversing, float speed, float entrySpeed){
-            return brakeHeld && !alreadyReversing && speed <= entrySpeed;
+        public static bool ShouldStartReversing(bool brakeHeld, bool alreadyReversing,
+                                                float speed, float entrySpeed,
+                                                bool aligned){
+            return brakeHeld && !alreadyReversing && speed <= entrySpeed && aligned;
         }
 
         /// <summary>

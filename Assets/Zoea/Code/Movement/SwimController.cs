@@ -10,11 +10,21 @@ namespace Zoea.Movement{
     /// FixedUpdate does all physics, per Unity execution order. All actual
     /// direction/rotation logic lives in <see cref="SwimMath"/>.
     ///
-    /// S is a brake first and a turnaround second: holding it decelerates the
-    /// creature to a near-stop, then flips into reversing along the camera's
-    /// aim. A latch (<see cref="_reversing"/>) prevents the speed drop caused
-    /// by braking from re-triggering the brake once reversing has begun. W
-    /// and A/D are ignored entirely while S is held.
+    /// W is ignored while S is held; A and D steer the reverse heading,
+    /// producing diagonal reverse movement exactly as they produce diagonal
+    /// forward movement. The body begins rotating toward the reverse heading
+    /// the instant S is pressed, but reverse thrust is withheld until the
+    /// body has actually come round: alignment, not the facing target, is
+    /// the gate. Until aligned the creature keeps decelerating in place
+    /// while it turns; once aligned it switches to reverse thrust.
+    ///
+    /// A latch (<see cref="_reversing"/>) prevents the speed drop caused by
+    /// braking from re-triggering the brake once reversing has begun.
+    /// Because _reversing latches until S is released, the alignment
+    /// condition gates only the initial turnaround — it is not re-evaluated
+    /// while the brake stays held. Steering with A or D while already
+    /// reversing therefore behaves like strafing while swimming forward,
+    /// which is never gated on alignment.
     ///
     /// Reverse thrust is gated on body alignment: once reversing begins, the
     /// body still has to rotate up to 180 degrees to face the reverse
@@ -73,38 +83,33 @@ namespace Zoea.Movement{
 
             Quaternion aim = _camera.AimRotation;
 
-            if (!_brakeHeld){
-                _reversing = false;
-            }else if (SwimMath.ShouldStartReversing(_brakeHeld, _reversing,
-                     _rb.linearVelocity.magnitude, _reverseEntrySpeed)){
-                _reversing = true;
-            }
-
-            bool braking = _brakeHeld && !_reversing;
-
-            Vector3 moveDirection;
-            if (braking){
-                moveDirection = Vector3.zero;
-            }else if (_reversing){
-                moveDirection = aim * Vector3.back;
-            }else{
-                moveDirection = SwimMath.MoveDirection(aim, _forwardHeld, _strafe);
-            }
-
-            Quaternion target = SwimMath.FacingRotation(moveDirection, aim);
+            Vector3 facingDirection = SwimMath.FacingDirection(aim, _brakeHeld, _forwardHeld, _strafe);
+            Quaternion target = SwimMath.FacingRotation(facingDirection, aim);
             float angleToTarget = Quaternion.Angle(_rb.rotation, target);
             bool aligned = angleToTarget <= _thrustAlignmentAngle;
 
-            if (braking){
-                _rb.AddForce(-_rb.linearVelocity * _brakeStrength, ForceMode.Acceleration);
-            }else if (_reversing){
-                if (aligned){
-                    _rb.AddForce(moveDirection * _swimForce, ForceMode.Acceleration);
-                }else if (_rb.linearVelocity.magnitude > _reverseEntrySpeed){
+            if (!_brakeHeld){
+                _reversing = false;
+            }else if (SwimMath.ShouldStartReversing(_brakeHeld, _reversing,
+                     _rb.linearVelocity.magnitude, _reverseEntrySpeed, aligned)){
+                _reversing = true;
+            }
+
+            Vector3 thrustDirection;
+            if (_brakeHeld){
+                thrustDirection = _reversing ? facingDirection : Vector3.zero;
+            }else{
+                thrustDirection = SwimMath.MoveDirection(aim, _forwardHeld, _strafe);
+            }
+
+            if (_brakeHeld){
+                if (_reversing){
+                    _rb.AddForce(thrustDirection * _swimForce, ForceMode.Acceleration);
+                }else{
                     _rb.AddForce(-_rb.linearVelocity * _brakeStrength, ForceMode.Acceleration);
                 }
-            }else if (moveDirection.sqrMagnitude > 0.0001f){
-                _rb.AddForce(moveDirection * _swimForce, ForceMode.Acceleration);
+            }else if (thrustDirection.sqrMagnitude > 0.0001f){
+                _rb.AddForce(thrustDirection * _swimForce, ForceMode.Acceleration);
             }
 
             _rb.MoveRotation(Quaternion.RotateTowards(_rb.rotation, target,

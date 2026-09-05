@@ -4,8 +4,9 @@ using Zoea.Core;
 
 namespace Zoea.Tests.EditMode{
     /// <summary>
-    /// EditMode tests for SwimMath: move direction composition, the brake-to-reverse
-    /// handoff, and facing rotation including the straight up/down edge cases.
+    /// EditMode tests for SwimMath: move direction composition, the body-facing
+    /// direction while braking/reversing, the brake-to-reverse handoff, and
+    /// facing rotation including the straight up/down edge cases.
     /// </summary>
     [TestFixture]
     public class SwimMathTests{
@@ -54,38 +55,123 @@ namespace Zoea.Tests.EditMode{
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeHeldNotReversingBelowEntry_ReturnsTrue(){
-            bool result = SwimMath.ShouldStartReversing(true, false, 1f, EntrySpeed);
+        public void FacingDirection_BrakeHeldIdentityAim_ReturnsAimBack(){
+            Vector3 result = SwimMath.FacingDirection(Quaternion.identity, true, false, 0f);
+            Assert.That((result - Vector3.back).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeHeldNonIdentityAimWithPitch_ReturnsAimBack(){
+            Quaternion aim = Quaternion.Euler(30f, 45f, 0f);
+            Vector3 result = SwimMath.FacingDirection(aim, true, false, 0f);
+            Vector3 expected = aim * Vector3.back;
+
+            Assert.That((result - expected).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeHeldZeroStrafe_ReturnsAimBackRegardlessOfForward(){
+            Quaternion aim = Quaternion.Euler(15f, 60f, 0f);
+            Vector3 expected = aim * Vector3.back;
+
+            Vector3 resultForwardNotHeld = SwimMath.FacingDirection(aim, true, false, 0f);
+            Vector3 resultForwardHeld = SwimMath.FacingDirection(aim, true, true, 0f);
+
+            Assert.That((resultForwardNotHeld - expected).magnitude, Is.LessThan(0.0001f));
+            Assert.That((resultForwardHeld - expected).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeHeldStrafePositive_Is45DegreesTowardRight(){
+            Quaternion aim = Quaternion.Euler(15f, 60f, 0f);
+            Vector3 back = aim * Vector3.back;
+            Vector3 right = aim * Vector3.right;
+
+            Vector3 resultForwardNotHeld = SwimMath.FacingDirection(aim, true, false, 1f);
+            Vector3 resultForwardHeld = SwimMath.FacingDirection(aim, true, true, 1f);
+
+            Assert.That(Vector3.Angle(resultForwardNotHeld, back), Is.EqualTo(45f).Within(0.01f));
+            Assert.That(Vector3.Dot(resultForwardNotHeld, right), Is.GreaterThan(0f));
+            Assert.That((resultForwardNotHeld - resultForwardHeld).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeHeldStrafeNegative_Is45DegreesTowardLeft(){
+            Quaternion aim = Quaternion.Euler(15f, 60f, 0f);
+            Vector3 back = aim * Vector3.back;
+            Vector3 right = aim * Vector3.right;
+
+            Vector3 resultForwardNotHeld = SwimMath.FacingDirection(aim, true, false, -1f);
+            Vector3 resultForwardHeld = SwimMath.FacingDirection(aim, true, true, -1f);
+
+            Assert.That(Vector3.Angle(resultForwardNotHeld, back), Is.EqualTo(45f).Within(0.01f));
+            Assert.That(Vector3.Dot(resultForwardNotHeld, right), Is.LessThan(0f));
+            Assert.That((resultForwardNotHeld - resultForwardHeld).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [TestCase(-1f)]
+        [TestCase(0f)]
+        [TestCase(1f)]
+        public void FacingDirection_BrakeHeld_ResultIsNormalized(float strafe){
+            Quaternion aim = Quaternion.Euler(15f, 60f, 0f);
+            Vector3 result = SwimMath.FacingDirection(aim, true, false, strafe);
+            Assert.That(result.magnitude, Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeNotHeldForwardHeld_MatchesMoveDirection(){
+            Quaternion aim = Quaternion.Euler(10f, 20f, 0f);
+            Vector3 result = SwimMath.FacingDirection(aim, false, true, 0f);
+            Vector3 expected = SwimMath.MoveDirection(aim, true, 0f);
+
+            Assert.That((result - expected).magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void FacingDirection_BrakeNotHeldNoInput_ReturnsZero(){
+            Vector3 result = SwimMath.FacingDirection(Quaternion.identity, false, false, 0f);
+            Assert.That(result.magnitude, Is.LessThan(0.0001f));
+        }
+
+        [Test]
+        public void ShouldStartReversing_BrakeHeldNotReversingBelowEntryAligned_ReturnsTrue(){
+            bool result = SwimMath.ShouldStartReversing(true, false, 1f, EntrySpeed, true);
             Assert.That(result, Is.True);
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeHeldNotReversingAtEntry_ReturnsTrue(){
-            bool result = SwimMath.ShouldStartReversing(true, false, EntrySpeed, EntrySpeed);
+        public void ShouldStartReversing_BrakeHeldNotReversingAtEntryAligned_ReturnsTrue(){
+            bool result = SwimMath.ShouldStartReversing(true, false, EntrySpeed, EntrySpeed, true);
             Assert.That(result, Is.True);
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeHeldNotReversingAboveEntry_ReturnsFalse(){
-            bool result = SwimMath.ShouldStartReversing(true, false, 3f, EntrySpeed);
+        public void ShouldStartReversing_BrakeHeldNotReversingAboveEntryAligned_ReturnsFalse(){
+            bool result = SwimMath.ShouldStartReversing(true, false, 3f, EntrySpeed, true);
             Assert.That(result, Is.False);
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeHeldAlreadyReversingBelowEntry_ReturnsFalse(){
-            bool result = SwimMath.ShouldStartReversing(true, true, 1f, EntrySpeed);
+        public void ShouldStartReversing_BrakeHeldAlreadyReversingBelowEntryAligned_ReturnsFalse(){
+            bool result = SwimMath.ShouldStartReversing(true, true, 1f, EntrySpeed, true);
             Assert.That(result, Is.False);
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeNotHeldNotReversingBelowEntry_ReturnsFalse(){
-            bool result = SwimMath.ShouldStartReversing(false, false, 1f, EntrySpeed);
+        public void ShouldStartReversing_BrakeNotHeldNotReversingBelowEntryAligned_ReturnsFalse(){
+            bool result = SwimMath.ShouldStartReversing(false, false, 1f, EntrySpeed, true);
             Assert.That(result, Is.False);
         }
 
         [Test]
-        public void ShouldStartReversing_BrakeNotHeldAlreadyReversingBelowEntry_ReturnsFalse(){
-            bool result = SwimMath.ShouldStartReversing(false, true, 1f, EntrySpeed);
+        public void ShouldStartReversing_BrakeNotHeldAlreadyReversingBelowEntryAligned_ReturnsFalse(){
+            bool result = SwimMath.ShouldStartReversing(false, true, 1f, EntrySpeed, true);
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void ShouldStartReversing_BrakeHeldNotReversingBelowEntryNotAligned_ReturnsFalse(){
+            bool result = SwimMath.ShouldStartReversing(true, false, 1f, EntrySpeed, false);
             Assert.That(result, Is.False);
         }
 
